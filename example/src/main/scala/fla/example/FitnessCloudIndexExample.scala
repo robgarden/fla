@@ -8,11 +8,12 @@ import scalaz.effect.IO.putStrLn
 
 import eu.timepit.refined.auto._
 
+import shapeless._
 import spire.math.Interval
 import spire.implicits._
 
 import cilib._
-import cilib.benchmarks.Benchmarks
+import benchmarks.Benchmarks
 import metrics.FitnessCloudIndex
 
 object FitnessCloudIndexExample extends SafeApp {
@@ -26,14 +27,13 @@ object FitnessCloudIndexExample extends SafeApp {
     dev <- FitnessCloudIndex.meanOfStdDev(30)(ps)
   } yield (cog |@| soc |@| dev) { (_, _, _) }
 
-  val min     = Comparison dominance Min
-  val problem = Eval unconstrained Benchmarks.spherical[NonEmptyList, Double]
+  val f: D2[Double] => Double = Benchmarks.spherical[nat._2,Double] _
 
-  val env =
-    Environment(
-      cmp = Comparison  dominance Min,
-      eval = Eval.unconstrained(Benchmarks.spherical[NonEmptyList, Double]).eval,
-      bounds = domain)
+  val env = Environment(
+    cmp = Comparison dominance Min,
+    eval = Eval.unconstrained(f).eval,
+    bounds = domain
+  )
 
   override val runc: IO[Unit] = {
     val result = fci.run(env) eval RNG.fromTime

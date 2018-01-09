@@ -6,11 +6,12 @@ import Scalaz._
 import scalaz.effect._
 import scalaz.effect.IO.putStrLn
 
+import shapeless._
 import spire.math.Interval
 import spire.implicits._
 
 import cilib._
-import cilib.benchmarks.Benchmarks
+import benchmarks.Benchmarks
 import metrics.FirstEntropicMeasure
 import walks.RandomProgressiveWalk
 
@@ -31,11 +32,13 @@ object FirstEntropicMeasureExample extends SafeApp {
   val femMicro = femFromStepSize(.01)
   val both = (femMacro |@| femMicro) { (_, _) }
 
-   val env =
-    Environment(
-      cmp = Comparison dominance Min,
-      eval = Eval.unconstrained(Benchmarks.spherical[NonEmptyList, Double]).eval,
-      bounds = domain)
+  val f: D2[Double] => Double = Benchmarks.spherical[nat._2,Double] _
+
+  val env = Environment(
+    cmp = Comparison dominance Min,
+    eval = Eval.unconstrained(f).eval,
+    bounds = domain
+  )
 
   override val runc: IO[Unit] = {
     val result = both.run(env) eval RNG.fromTime
