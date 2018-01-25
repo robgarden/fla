@@ -14,48 +14,14 @@ import spire.math.{Interval,sqrt}
 import spire.implicits._
 
 import cilib._
-import benchmarks.cec.cec2013.niching.Benchmarks
-import benchmarks.implicits._
 import benchmarks.dimension._
+import benchmarks.implicits._
 import metrics.Dispersion
+import CEC2013NichingFunctions._
 
 object DispersionCEC2013Example extends SafeApp {
 
-  val f1: Dimension[nat._1,Double] => Double = Benchmarks.f1[Double] _
-  val f2: Dimension[nat._1,Double] => Double = Benchmarks.f2[Double] _
-  val f3: Dimension[nat._1,Double] => Double = Benchmarks.f3[Double] _
-  val f4: Dimension[nat._2,Double] => Double = Benchmarks.f4[Double] _
-  val f5: Dimension[nat._2,Double] => Double = Benchmarks.f5[Double] _
-  val f6: Dimension[nat._2,Double] => Double = Benchmarks.f6[nat._2,Double] _
-  val f7: Dimension[nat._2,Double] => Double = Benchmarks.f7[nat._2,Double] _
-  val f8: Dimension[nat._2,Double] => Double = Benchmarks.f8[nat._2,Double] _
-  val f9: Dimension[nat._2,Double] => Double = Benchmarks.f9[nat._2,Double] _
-  val f10: Dimension[nat._2,Double] => Double = Benchmarks.f10[nat._2,Double] _
-  val f11: Dimension[nat._2,Double] => Double = Benchmarks.f11[nat._2,Double] _
-  val f12: Dimension[nat._3,Double] => Double = Benchmarks.f12[nat._3,Double] _
-
   type FunctionWithInfo[N<:Nat] = (String, Dimension[N,Double] => Double, NonEmptyList[Interval[Double]])
-
-  val functions1 = List(
-    ("f1", f1, Interval(0.0, 30.0)^1),
-    ("f2", f2, Interval(0.0, 1.0)^1),
-    ("f3", f3, Interval(0.0, 1.0)^1)
-  )
-
-  val functions2 = List(
-    ("f4", f4, Interval(-6.0, 6.0)^2),
-    ("f5", f5, NonEmptyList(Interval(-1.9, 1.9), Interval(-1.1, 1.1))),
-    ("f6", f6, Interval(-10.0, 10.0)^2),
-    ("f7", f7, Interval(0.25, 10.0)^2),
-    ("f8", f8, Interval(0.0, 1.0)^2),
-    ("f9", f9, Interval(-5.0, 5.0)^2),
-    ("f10", f10, Interval(-5.0, 5.0)^2),
-    ("f11", f11, Interval(-5.0, 5.0)^2)
-  )
-
-  val functions3 = List(
-    ("f12", f12, Interval(-5.0, 5.0)^3)
-  )
 
   def runDispersion(name: String, env: Environment[Double]) = {
     val domain = env.bounds
@@ -67,7 +33,7 @@ object DispersionCEC2013Example extends SafeApp {
       metric    <- Dispersion(.1)(solutions)
     } yield metric
 
-    val samples = 100
+    val samples = 30
     val rng = RNG init 1
     val repeats: String \/ List[Double] = dispersion
       .run(env)
@@ -95,7 +61,14 @@ object DispersionCEC2013Example extends SafeApp {
   }
 
   override val runc: IO[Unit] = {
-    val results = getResults(functions1) +++ getResults(functions2) +++ getResults(functions3)
+    val results = for {
+      r1  <- getResults(functions1)
+      r2  <- getResults(functions2)
+      r3  <- getResults(functions3)
+      r5  <- getResults(functions5)
+      r10 <- getResults(functions10)
+      r20 <- getResults(functions20)
+    } yield r1 ++ r2 ++ r3 ++ r5 ++ r10 ++ r20
     val resultsString = results.toOption.get.map(_.toString).mkString("\n")
     putStrLn(resultsString)
   }
