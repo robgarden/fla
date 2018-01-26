@@ -16,26 +16,26 @@ import spire.implicits._
 import cilib._
 import benchmarks.dimension._
 import benchmarks.implicits._
-import metrics.Dispersion
+import metrics.InformationLandscape
 import CEC2013NichingFunctions._
 
-object DispersionCEC2013Example extends SafeApp {
+object InformationLandscapeCEC2013Example extends SafeApp {
 
   type FunctionWithInfo[N<:Nat] = (String, Dimension[N,Double] => Double, NonEmptyList[Interval[Double]])
 
-  def runDispersion(name: String, env: Environment[Double]) = {
+  def runInformationLandscape(name: String, env: Environment[Double]) = {
     val domain = env.bounds
     val points = Position.createPositions(domain, 100)
 
-    val dispersion = for {
+    val il = for {
       ps        <- Step.pointR(points)
       solutions <- ps traverseU Step.evalP[Double]
-      metric    <- Dispersion(.1)(solutions)
+      metric    <- InformationLandscape(solutions)
     } yield metric
 
     val samples = 30
     val rng = RNG init 1
-    val repeats: String \/ List[Double] = dispersion
+    val repeats: String \/ List[Double] = il
       .run(env)
       .replicateM(samples)
       .eval(rng)
@@ -57,7 +57,7 @@ object DispersionCEC2013Example extends SafeApp {
           bounds = domain
         ))
       }
-      .traverseU { env => runDispersion(env._1,env._2) }
+      .traverseU { env => runInformationLandscape(env._1,env._2) }
   }
 
   override val runc: IO[Unit] = {
@@ -71,7 +71,7 @@ object DispersionCEC2013Example extends SafeApp {
     } yield r1 ++ r2 ++ r3 ++ r5 ++ r10 ++ r20
 
     import java.io._
-    val pw = new PrintWriter(new File("/Users/robertgarden/Desktop/dispersion.csv" ))
+    val pw = new PrintWriter(new File("/Users/robertgarden/Desktop/information-landscape.csv" ))
 
     results.foreach { r =>
       r.foreach { ri =>

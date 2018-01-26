@@ -16,35 +16,48 @@ import spire.implicits._
 import cilib._
 import benchmarks.dimension._
 import benchmarks.implicits._
-import metrics.Dispersion
+import metrics.FirstEntropicMeasure
 import CEC2013NichingFunctions._
+import fla.walks._
 
-object DispersionCEC2013Example extends SafeApp {
+object FEMCEC2013Example extends SafeApp {
 
   type FunctionWithInfo[N<:Nat] = (String, Dimension[N,Double] => Double, NonEmptyList[Interval[Double]])
 
-  def runDispersion(name: String, env: Environment[Double]) = {
+  def runFEM(name: String, env: Environment[Double]) = {
     val domain = env.bounds
-    val points = Position.createPositions(domain, 100)
+    def stepSize(percent: Double, i: Interval[Double]) = percent * (i.upperValue - i.lowerValue)
 
-    val dispersion = for {
-      ps        <- Step.pointR(points)
-      solutions <- ps traverseU Step.evalP[Double]
-      metric    <- Dispersion(.1)(solutions)
-    } yield metric
+    def femFromStepSize(ss: Double) =
+      for {
+        ps        <- Step pointR RandomProgressiveWalk(domain, 100, stepSize(ss, domain.head))
+        solutions <- ps traverseU Step.evalP[Double]
+        fem       <- FirstEntropicMeasure(solutions)
+      } yield fem
+
+    val femMacro = femFromStepSize(.1)
+    val femMicro = femFromStepSize(.01)
 
     val samples = 30
     val rng = RNG init 1
-    val repeats: String \/ List[Double] = dispersion
+    val repeatsMacro: String \/ List[Double] =  femMacro
       .run(env)
       .replicateM(samples)
       .eval(rng)
       .sequenceU
 
-    repeats.map { values =>
-      val avg = values.sum / samples
-      val dev = sqrt(values.mapSum(vi => (vi - avg) ** 2) / samples)
-      (name, avg, dev)
+    val repeatsMicro: String \/ List[Double] =  femMicro
+      .run(env)
+      .replicateM(samples)
+      .eval(rng)
+      .sequenceU
+
+    (repeatsMacro |@| repeatsMicro) { (mac, micro) =>
+      val macroAvg = mac.sum / samples
+      val macroDev = sqrt(mac.mapSum(vi => (vi - macroAvg) ** 2) / samples)
+      val microAvg = micro.sum / samples
+      val microDev = sqrt(micro.mapSum(vi => (vi - microAvg) ** 2) / samples)
+      (name, macroAvg, macroDev, microAvg, microDev)
     }
   }
 
@@ -57,7 +70,7 @@ object DispersionCEC2013Example extends SafeApp {
           bounds = domain
         ))
       }
-      .traverseU { env => runDispersion(env._1,env._2) }
+      .traverseU { env => runFEM(env._1,env._2) }
   }
 
   override val runc: IO[Unit] = {
@@ -71,11 +84,11 @@ object DispersionCEC2013Example extends SafeApp {
     } yield r1 ++ r2 ++ r3 ++ r5 ++ r10 ++ r20
 
     import java.io._
-    val pw = new PrintWriter(new File("/Users/robertgarden/Desktop/dispersion.csv" ))
+    val pw = new PrintWriter(new File("/Users/robertgarden/Desktop/fem.csv" ))
 
     results.foreach { r =>
       r.foreach { ri =>
-        pw.println(s"${ri._1},${ri._2},${ri._3}")
+        pw.println(s"${ri._1},${ri._2},${ri._3},${ri._4},${ri._5}")
       }
     }
 

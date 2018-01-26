@@ -33,6 +33,7 @@ object CEC2013NichingFunctions {
   val f12_5: Dimension[nat._5,Double] => Double = Benchmarks.f12[nat._5,Double] _
   val f12_10: Dimension[nat._10,Double] => Double = Benchmarks.f12[nat._10,Double] _
   val f12_20: Dimension[nat._20,Double] => Double = Benchmarks.f12[nat._20,Double] _
+
   val functions1 = List(
     ("f1-1", f1, Interval(0.0, 30.0)^1),
     ("f2-1", f2, Interval(0.0, 1.0)^1),
