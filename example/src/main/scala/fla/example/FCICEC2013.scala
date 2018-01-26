@@ -31,12 +31,13 @@ object FitnessCloudIndexCEC2013Example extends SafeApp {
       ps  <- Step.pointR(points)
       cog <- FitnessCloudIndex cognitive ps
       soc <- FitnessCloudIndex social ps
-      dev <- FitnessCloudIndex.meanOfStdDev(30)(ps)
-    } yield (cog |@| soc |@| dev) { (_, _, _) }
+      // dev <- FitnessCloudIndex.meanOfStdDev(30)(ps)
+    // } yield (cog |@| soc |@| dev) { (_, _, _) }
+    } yield (cog |@| soc) { (_, _) }
 
-    val samples = 30
+    val samples = 1
     val rng = RNG init 1
-    val repeats: String \/ List[(Double,Double,Double)] = fci
+    val repeats: String \/ List[(Double,Double)] = fci
       .run(env)
       .replicateM(samples)
       .eval(rng)
@@ -74,10 +75,11 @@ object FitnessCloudIndexCEC2013Example extends SafeApp {
     } yield r1 ++ r2 ++ r3 ++ r5 ++ r10 ++ r20
 
     import java.io._
-    val pw = new PrintWriter(new File("/Users/robertgarden/Desktop/fci.csv" ))
+    val pw = new PrintWriter(new File("/Users/robertgarden/Desktop/fci.csv"))
 
-    results.foreach { r =>
-      r.foreach { ri =>
+    results match {
+      case -\/(v) => pw.println(v)
+      case \/-(rs) => rs.foreach { ri =>
         pw.println(s"${ri._1},${ri._2},${ri._3},${ri._4},${ri._5}")
       }
     }
